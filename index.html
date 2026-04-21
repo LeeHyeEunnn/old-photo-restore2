@@ -3,48 +3,183 @@
 <head>
   <meta charset="UTF-8">
   <title>사진 복원 사이트</title>
+
   <style>
     body {
       text-align: center;
-      font-family: Arial;
+      font-family: Arial, sans-serif;
+      background-color: #fcfcfc;
+      margin-top: 30px;
     }
+
+    h1 {
+      color: #333;
+    }
+
+    /* 예쁘게 다듬어진 사진 영역 */
     img {
-      max-width: 300px;
-      margin-top: 20px;
+      max-width: 400px;
+      margin: 20px auto;
+      border-radius: 12px; /* 모서리 둥글게 */
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* 부드러운 그림자 */
+      display: none; /* 처음엔 숨겨두었다가 사진을 올리면 보여줍니다 */
     }
+
+    /* 둥글고 세련된 버튼 스타일 */
     button {
-      padding: 10px 20px;
-      margin-top: 10px;
+      padding: 12px 24px;
+      font-size: 15px;
+      margin: 5px;
       cursor: pointer;
+      background-color: #ffffff;
+      border: 2px solid #e0e0e0;
+      border-radius: 25px;
+      color: #333;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #f0f0f0;
+    }
+
+    /* 옵션 활성화 상태 (테두리만 연초록색) */
+    .active {
+      background-color: #ffffff;
+      color: #333;
+      border: 2px solid #81c784;
+    }
+
+    /* 복원하기 버튼 강조 */
+    .btn-restore {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      font-size: 16px;
+    }
+    .btn-restore:hover {
+      background-color: #45a049;
     }
   </style>
 </head>
+
 <body>
 
-  <h1>📸 사진 복원 사이트</h1>
+<h1>📸 사진 복원 사이트</h1>
 
-  <input type="file" id="upload">
-  <br>
-  <img id="preview" />
+<input type="file" id="upload" accept="image/*"><br>
 
-  <br>
-  <button onclick="restore()">복원하기</button>
+<img id="preview" alt="사진 미리보기">
 
-  <script>
-    const upload = document.getElementById('upload');
-    const preview = document.getElementById('preview');
+<h3>옵션 선택</h3>
 
-     upload.addEventListener('change', () => {
-        const file = upload.files[0];
-        preview.src = URL.createObjectURL(file);
-    });
+<button onclick="toggle('sharp')" id="sharp">선명하게</button>
+<button onclick="toggle('color')" id="color">컬러</button>
+<button onclick="toggle('blur')" id="blur">스크래치 제거</button>
 
-     function restore() {
-     preview.style.filter = "contrast(120%) brightness(110%)";
+<br><br>
+<button class="btn-restore" onclick="restore()">✨ 복원하기</button>
+<button onclick="downloadImage()">다운로드</button>
+
+<script>
+const preview = document.getElementById("preview");
+
+let options = {
+  sharp: false,
+  color: false,
+  blur: false
+};
+
+// 1. 파일 업로드 시 사진 보여주기
+document.getElementById("upload").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "inline-block"; // 숨겨둔 이미지를 화면에 표시
+    preview.style.filter = ""; // 새로운 사진을 올리면 필터 초기화
+  }
+});
+
+// 2. 옵션 버튼 토글
+function toggle(opt) {
+  options[opt] = !options[opt];
+  document.getElementById(opt).classList.toggle("active");
+}
+
+// 3. 필터 적용 함수
+function applyEffect() {
+  let filter = "";
+  if (options.sharp) filter += "contrast(160%) brightness(110%) ";
+  if (options.color) filter += "saturate(200%) ";
+  if (options.blur) filter += "blur(2px) ";
+
+  preview.style.filter = filter;
+}
+
+// 4. 복원하기 로직
+async function restore() {
+  const file = document.getElementById("upload").files[0];
+  
+  if (!file) {
+    alert("이미지를 먼저 선택해주세요!");
+    return;
+  }
+
+  // 서버(로컬)로 데이터를 보내는 부분
+  try {
+    const formData = new FormData();
+    formData.append("image", file);
     
-     alert("사진이 복원되었습니다!");
-    }
-    </script>
+    const res = await fetch("http://localhost:3000/restore", {
+      method: "POST",
+      body: formData
+    });
+    
+    const data = await res.json();
+    
+    // 서버에서 받은 복원된 이미지로 교체
+    preview.src = data.imageUrl; 
+  } catch (error) {
+    console.log("서버가 연결되지 않아 CSS 필터 효과만 적용합니다.");
+  }
+
+  // 선택한 옵션 필터 적용
+  applyEffect(); 
+  alert("✨ 복원 완료!");
+}
+
+// 5. 다운로드 기능
+function downloadImage() {
+  if (!preview.src) {
+    alert("다운로드할 이미지가 없습니다.");
+    return;
+  }
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = preview.src;
+
+  img.onload = () => {
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    let filter = "";
+    if (options.sharp) filter += "contrast(160%) brightness(110%) ";
+    if (options.color) filter += "saturate(200%) ";
+    if (options.blur) filter += "blur(2px) ";
+
+    ctx.filter = filter;
+    ctx.drawImage(img, 0, 0);
+
+    const link = document.createElement("a");
+    link.download = "restored-image.png";
+    link.href = canvas.toDataURL();
+    link.click();
+  };
+}
+</script>
 
 </body>
 </html>
