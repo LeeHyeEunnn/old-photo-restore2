@@ -2,129 +2,228 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>사진 복원</title>
-  
-  <link rel="stylesheet" href="style.css">
-  
-</head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Photo Lab</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <style>
+    :root {
+      --primary-color: #4f46e5;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-sub: #64748b;
+      --border-color: #e2e8f0;
+    }
 
+    body {
+      font-family: 'Pretendard', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .app-container {
+      width: 90%;
+      max-width: 420px;
+      background: var(--card-bg);
+      padding: 2.5rem 1.5rem;
+      border-radius: 24px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+
+    header h1 { font-size: 1.5rem; margin-bottom: 0.5rem; font-weight: 800; }
+    header p { color: var(--text-sub); font-size: 0.9rem; margin-bottom: 2rem; }
+
+    /* 업로드 영역 */
+    .upload-section {
+      border: 2px dashed var(--border-color);
+      padding: 2rem;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 1.5rem;
+      background: #fafafa;
+    }
+
+    .upload-section:hover {
+      border-color: var(--primary-color);
+      background: #f5f3ff;
+    }
+
+    #preview {
+      width: 100%;
+      border-radius: 12px;
+      display: none; /* 초기에는 숨김 */
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    /* 옵션 칩 스타일 */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 2rem;
+    }
+
+    .chip {
+      padding: 10px;
+      font-size: 0.85rem;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      background: white;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+      color: var(--text-sub);
+    }
+
+    .chip.active {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+
+    /* 버튼 스타일 */
+    .btn-main {
+      width: 100%;
+      padding: 16px;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: all 0.1s;
+    }
+
+    .btn-restore { background: var(--primary-color); color: white; }
+    .btn-restore:active { transform: scale(0.98); }
+    .btn-download { background: #f1f5f9; color: var(--text-main); }
+
+    /* 로딩 애니메이션 */
+    .loader {
+      display: none;
+      margin: 10px auto 20px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--primary-color);
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
 <body>
 
-<h1>사진 복원</h1>
+  <div class="app-container">
+    <header>
+      <h1>✨ AI Photo Lab</h1>
+      <p>오래된 사진을 고화질로 복원해보세요</p>
+    </header>
 
-<input type="file" id="upload" accept="image/*"><br>
+    <div class="upload-section" onclick="document.getElementById('upload').click()">
+      <div id="upload-placeholder">
+        <span style="font-size: 2rem;">🖼️</span>
+        <p style="margin: 10px 0 0; font-weight: 500;">사진 선택하기</p>
+      </div>
+      
+      <input type="file" id="upload" accept="image/*" hidden>
+      <img id="preview" alt="Preview">
+    </div>
 
-<img id="preview" alt="사진 미리보기">
+    <div class="options-grid">
+      <button class="chip" onclick="toggleOption(this, 'sharp')">선명하게</button>
+      <button class="chip" onclick="toggleOption(this, 'color')">컬러강조</button>
+      <button class="chip" onclick="toggleOption(this, 'blur')">부드럽게</button>
+    </div>
 
-<h3>옵션 선택</h3>
+    <div id="loader" class="loader"></div>
 
-<button onclick="toggle('sharp')" id="sharp">선명하게</button>
-<button onclick="toggle('color')" id="color">컬러</button>
-<button onclick="toggle('blur')" id="blur">스크래치 제거</button>
+    <button class="btn-main btn-restore" onclick="restore()">AI 복원 시작</button>
+    <button class="btn-main btn-download" onclick="downloadImage()">결과 저장하기</button>
+  </div>
 
-<br><br>
-<button class="btn-restore" onclick="restore()">복원하기</button>
-<button onclick="downloadImage()">다운로드</button>
+  <script>
+    const preview = document.getElementById("preview");
+    const placeholder = document.getElementById("upload-placeholder");
+    const loader = document.getElementById("loader");
+    let options = { sharp: false, color: false, blur: false };
 
-<script>
-const preview = document.getElementById("preview");
-
-let options = {
-  sharp: false,
-  color: false,
-  blur: false
-};
-
-// 1. 파일 업로드 시 사진 보여주기
-document.getElementById("upload").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (file) {
-    preview.src = URL.createObjectURL(file);
-    preview.style.display = "inline-block"; // 숨겨둔 이미지를 화면에 표시
-    preview.style.filter = ""; // 새로운 사진을 올리면 필터 초기화
-  }
-});
-
-// 2. 옵션 버튼 토글
-function toggle(opt) {
-  options[opt] = !options[opt];
-  document.getElementById(opt).classList.toggle("active");
-}
-
-// 3. 필터 적용 함수
-function applyEffect() {
-  let filter = "";
-  if (options.sharp) filter += "contrast(160%) brightness(110%) ";
-  if (options.color) filter += "saturate(200%) ";
-  if (options.blur) filter += "blur(2px) ";
-
-  preview.style.filter = filter;
-}
-
-// 4. 복원하기 로직
-async function restore() {
-  const file = document.getElementById("upload").files[0];
-  
-  if (!file) {
-    alert("이미지를 먼저 선택해주세요");
-    return;
-  }
-
-  // 서버(로컬)로 데이터를 보내는 부분
-  try {
-    const formData = new FormData();
-    formData.append("image", file);
-    
-    const res = await fetch("http://localhost:5000/restore", {
-      method: "POST",
-      body: formData
+    // 1. 파일 업로드 시 미리보기 기능
+    document.getElementById("upload").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = "block"; // 사진 보이기
+        placeholder.style.display = "none"; // 안내 문구 숨기기 ✨
+        preview.style.filter = "none";
+      }
     });
-    
-    const data = await res.json();
-    
-    // 서버에서 받은 복원된 이미지로 교체
-    preview.src = data.imageUrl; 
-  } catch (error) {
-    console.log("서버가 연결되지 않아 CSS 필터 효과만 적용합니다.");
-  }
 
-  // 선택한 옵션 필터 적용
-  applyEffect(); 
-  alert("복원 완료");
-}
+    // 2. 옵션 선택 토글
+    function toggleOption(el, opt) {
+      options[opt] = !options[opt];
+      el.classList.toggle("active");
+    }
 
-// 5. 다운로드 기능
-function downloadImage() {
-  if (!preview.src) {
-    alert("다운로드할 이미지가 없습니다.");
-    return;
-  }
+    // 3. AI 복원 요청 기능
+    async function restore() {
+      const file = document.getElementById("upload").files[0];
+      if (!file) return alert("사진을 먼저 선택해주세요!");
 
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  const img = new Image();
-  img.crossOrigin = "anonymous";
-  img.src = preview.src;
+      loader.style.display = "block"; 
+      preview.style.opacity = "0.5";
 
-  img.onload = () => {
-    canvas.width = img.width;
-    canvas.height = img.height;
+      try {
+        const formData = new FormData();
+        formData.append("image", file);
+        
+        // 127.0.0.1:5000 서버로 데이터 전송
+        const res = await fetch("http://127.0.0.1:5000/restore", {
+          method: "POST",
+          body: formData
+        });
+        
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
 
-    let filter = "";
-    if (options.sharp) filter += "contrast(160%) brightness(110%) ";
-    if (options.color) filter += "saturate(200%) ";
-    if (options.blur) filter += "blur(2px) ";
+        // 결과 이미지 적용
+        preview.src = data.imageUrl;
+        applyFilters(); 
+        alert("🎉 복원이 성공적으로 완료되었습니다!");
+      } catch (error) {
+        alert("🚨 실패: " + error.message);
+      } finally {
+        loader.style.display = "none";
+        preview.style.opacity = "1";
+      }
+    }
 
-    ctx.filter = filter;
-    ctx.drawImage(img, 0, 0);
+    // 4. 부가 필터 적용 (프론트엔드 효과)
+    function applyFilters() {
+      let filter = "";
+      if (options.sharp) filter += "contrast(130%) brightness(105%) ";
+      if (options.color) filter += "saturate(150%) ";
+      if (options.blur) filter += "blur(0.5px) ";
+      preview.style.filter = filter;
+    }
 
-    const link = document.createElement("a");
-    link.download = "restored-image.png";
-    link.href = canvas.toDataURL();
-    link.click();
-  };
-}
-</script>
-
+    // 5. 결과 이미지 저장
+    function downloadImage() {
+      if (!preview.src || preview.src.includes("blob:")) {
+        return alert("복원된 결과를 먼저 확인해주세요!");
+      }
+      const link = document.createElement("a");
+      link.href = preview.src;
+      link.download = "restored_photo.png";
+      link.click();
+    }
+  </script>
 </body>
 </html>
