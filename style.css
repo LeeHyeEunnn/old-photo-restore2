@@ -1,0 +1,55 @@
+body {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    background-color: #fcfcfc;
+    margin-top: 30px;
+}
+
+h1 {
+    color: #333;
+}
+
+/* 예쁘게 다듬어진 사진 영역 */
+img {
+    max-width: 400px;
+    margin: 20px auto;
+    border-radius: 12px; /* 모서리 둥글게 */
+     box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* 부드러운 그림자 */
+    display: none; /* 처음엔 숨겨두었다가 사진을 올리면 보여줍니다 */
+}
+
+    /* 둥글고 세련된 버튼 스타일 */
+button {
+    padding: 12px 24px;
+    font-size: 15px;
+    margin: 5px;
+    cursor: pointer;
+    background-color: #ffffff;
+    border: 2px solid #e0e0e0;
+    border-radius: 25px;
+    color: #333;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    background-color: #f0f0f0;
+}
+
+    /* 옵션 활성화 상태 (테두리만 연초록색) */
+.active {
+    background-color: #ffffff;
+    color: #333;
+    border: 2px solid #81c784;
+}
+
+    /* 복원하기 버튼 강조 */
+.btn-restore {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    font-size: 16px;
+}
+.btn-restore:hover {
+    background-color: #45a049;
+}
