@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app) # HTML 파일과 서버의 포트가 달라도 통신할 수 있게 허용
 
 # 발급받은 API 키를 여기에 입력하세요
-os.environ["REPLICATE_API_TOKEN"] = "r8_M282DWnjZ2yHzUYoCnUDagLDqLPzorW0dpypZ"
+os.environ["REPLICATE_API_TOKEN"] = "개인 API 키 입력"
 
 @app.route('/restore', methods=['POST'])
 def restore_image():
